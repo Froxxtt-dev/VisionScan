@@ -1,1019 +1,1301 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0a0a0f" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="VisionScan" />
-  <meta name="description" content="AI camera recognition — identify anything instantly" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#080810"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="VisionScan"/>
+  <meta name="description" content="Point your camera at anything — AI identifies it instantly"/>
   <title>VisionScan AI</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icon-192.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
-
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icon-192.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Cabinet+Grotesk:wght@400;500;700;800;900&display=swap" rel="stylesheet"/>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ═══════════════════════════════════════
+   RESET & TOKENS
+═══════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  /* Palette */
+  --ink:    #080810;
+  --ink2:   #0f0f1a;
+  --ink3:   #181828;
+  --glass:  rgba(255,255,255,0.055);
+  --rim:    rgba(255,255,255,0.10);
+  --lime:   #c8ff00;
+  --lime2:  #a8e800;
+  --sky:    #00d4ff;
+  --rose:   #ff3d7f;
+  --amber:  #ffb830;
+  --text:   #f0f0fa;
+  --sub:    rgba(240,240,250,0.50);
+  --dim:    rgba(240,240,250,0.28);
+  /* Spacing */
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --r-sm: 12px;
+  --r-md: 20px;
+  --r-lg: 28px;
+  --r-xl: 36px;
+}
+html, body {
+  width: 100%; height: 100%;
+  background: var(--ink);
+  color: var(--text);
+  font-family: 'Cabinet Grotesk', sans-serif;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
 
-    :root {
-      --neon: #00f5a0;
-      --neon2: #00d9f5;
-      --accent: #f500a0;
-      --bg: #0a0a0f;
-      --bg2: #111118;
-      --bg3: #1a1a28;
-      --surface: rgba(255,255,255,0.04);
-      --border: rgba(0,245,160,0.18);
-      --text: #e8e8f0;
-      --muted: rgba(232,232,240,0.45);
-      --radius: 16px;
-    }
+/* ═══════════════════════════════════════
+   FULL-SCREEN CAMERA (base layer)
+═══════════════════════════════════════ */
+#app { position: fixed; inset: 0; }
 
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Syne', sans-serif;
-      overflow: hidden;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-    }
+#video {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  background: var(--ink);
+  display: block;
+}
+#canvas { display: none; }
 
-    /* ── LAYOUT ── */
-    #app {
-      display: flex;
-      flex-direction: column;
-      height: 100dvh;
-      position: relative;
-    }
+/* ═══════════════════════════════════════
+   CAMERA PLACEHOLDER
+═══════════════════════════════════════ */
+#cam-placeholder {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px;
+  background: var(--ink2);
+  z-index: 2;
+  padding: 40px;
+  text-align: center;
+}
+#cam-placeholder.hidden { display: none; }
+.placeholder-icon {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: var(--glass);
+  border: 1px solid var(--rim);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 4px;
+}
+.placeholder-icon svg { opacity: 0.5; }
+#cam-placeholder h3 { font-size: 20px; font-weight: 800; color: var(--text); }
+#cam-placeholder p { font-size: 14px; color: var(--sub); line-height: 1.6; max-width: 220px; }
+#start-cam-btn {
+  margin-top: 8px;
+  background: var(--lime);
+  color: var(--ink);
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  padding: 14px 32px;
+  border-radius: 100px;
+  transition: transform .15s, opacity .15s;
+  letter-spacing: 0.2px;
+}
+#start-cam-btn:active { transform: scale(0.96); opacity: 0.85; }
 
-    /* ── HEADER ── */
-    header {
-      position: relative;
-      z-index: 10;
-      padding: 16px 20px 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: linear-gradient(to bottom, rgba(10,10,15,0.95), transparent);
-    }
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .logo-icon {
-      width: 34px;
-      height: 34px;
-    }
-    .logo-text {
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      color: var(--neon);
-    }
-    .logo-text span { color: var(--text); }
-    .status-pill {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      padding: 5px 12px;
-      font-family: 'Space Mono', monospace;
-      font-size: 10px;
-      color: var(--muted);
-      letter-spacing: 0.5px;
-    }
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--neon);
-      animation: pulse-dot 2s infinite;
-    }
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
+/* ═══════════════════════════════════════
+   SCAN FRAME OVERLAY
+═══════════════════════════════════════ */
+#scan-overlay {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 3;
+  opacity: 0; transition: opacity .4s;
+}
+#scan-overlay.visible { opacity: 1; }
 
-    /* ── CAMERA SECTION ── */
-    #camera-section {
-      position: relative;
-      flex: 0 0 auto;
-      height: 52vh;
-      overflow: hidden;
-      background: #000;
-    }
-    #video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    #canvas { display: none; }
+.vignette {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 50%, transparent 40%, rgba(8,8,16,0.55) 100%);
+}
 
-    /* Scan overlay */
-    .scan-overlay {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-    }
-    .scan-frame {
-      position: absolute;
-      inset: 18px;
-      border-radius: var(--radius);
-    }
-    /* Corner brackets */
-    .corner {
-      position: absolute;
-      width: 28px;
-      height: 28px;
-      border-color: var(--neon);
-      border-style: solid;
-    }
-    .corner.tl { top: 0; left: 0; border-width: 2.5px 0 0 2.5px; border-radius: 4px 0 0 0; }
-    .corner.tr { top: 0; right: 0; border-width: 2.5px 2.5px 0 0; border-radius: 0 4px 0 0; }
-    .corner.bl { bottom: 0; left: 0; border-width: 0 0 2.5px 2.5px; border-radius: 0 0 0 4px; }
-    .corner.br { bottom: 0; right: 0; border-width: 0 2.5px 2.5px 0; border-radius: 0 0 4px 0; }
-    /* Scan line */
-    .scan-line {
-      position: absolute;
-      left: 18px;
-      right: 18px;
-      height: 1.5px;
-      background: linear-gradient(90deg, transparent, var(--neon), transparent);
-      animation: scan 2.8s ease-in-out infinite;
-      box-shadow: 0 0 8px var(--neon);
-      opacity: 0;
-    }
-    .scan-line.active { opacity: 1; }
-    @keyframes scan {
-      0% { top: 18px; }
-      50% { top: calc(52vh - 18px); }
-      100% { top: 18px; }
-    }
+/* Corner brackets */
+.bracket {
+  position: absolute;
+  width: 36px; height: 36px;
+  border-color: var(--lime);
+  border-style: solid;
+  opacity: 0.9;
+}
+.bracket.tl { top: 22%; left: 8%; border-width: 2.5px 0 0 2.5px; border-radius: 5px 0 0 0; }
+.bracket.tr { top: 22%; right: 8%; border-width: 2.5px 2.5px 0 0; border-radius: 0 5px 0 0; }
+.bracket.bl { bottom: 40%; left: 8%; border-width: 0 0 2.5px 2.5px; border-radius: 0 0 0 5px; }
+.bracket.br { bottom: 40%; right: 8%; border-width: 0 2.5px 2.5px 0; border-radius: 0 0 5px 0; }
 
-    /* Camera placeholder */
-    #cam-placeholder {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-      background: var(--bg2);
-    }
-    #cam-placeholder svg { opacity: 0.3; }
-    #cam-placeholder p {
-      font-size: 13px;
-      color: var(--muted);
-      text-align: center;
-      max-width: 200px;
-    }
-    #cam-placeholder.hidden { display: none; }
+/* Scan beam */
+#scan-beam {
+  position: absolute;
+  left: 8%; right: 8%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, var(--lime) 50%, transparent 100%);
+  box-shadow: 0 0 16px 3px rgba(200,255,0,0.4);
+  top: 22%;
+  animation: beam 2.4s cubic-bezier(0.45,0,0.55,1) infinite;
+  opacity: 0;
+}
+#scan-beam.active { opacity: 1; }
+@keyframes beam {
+  0%   { top: 22%; }
+  50%  { top: 58%; }
+  100% { top: 22%; }
+}
 
-    /* Loading overlay */
-    #analyzing-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(10,10,15,0.8);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 14px;
-      backdrop-filter: blur(4px);
-    }
-    #analyzing-overlay.visible { display: flex; }
-    .spinner {
-      width: 48px;
-      height: 48px;
-      border: 2px solid rgba(0,245,160,0.15);
-      border-top-color: var(--neon);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .analyzing-text {
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      color: var(--neon);
-      letter-spacing: 2px;
-    }
+/* ═══════════════════════════════════════
+   TOP HUD
+═══════════════════════════════════════ */
+#hud-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 10;
+  padding-top: max(16px, var(--safe-top));
+  padding-left: 16px; padding-right: 16px; padding-bottom: 10px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(to bottom, rgba(8,8,16,0.85) 0%, transparent 100%);
+}
+.brand {
+  display: flex; align-items: center; gap: 9px;
+}
+.brand-mark {
+  width: 32px; height: 32px;
+  background: var(--lime);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.brand-name {
+  font-size: 17px; font-weight: 900;
+  letter-spacing: -0.3px;
+  line-height: 1;
+}
+.brand-name em { font-style: normal; color: var(--lime); }
 
-    /* ── CAPTURE BUTTON BAR ── */
-    #controls {
-      position: relative;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-      padding: 14px 20px;
-      background: linear-gradient(to top, rgba(10,10,15,1) 60%, transparent);
-    }
-    #capture-btn {
-      width: 68px;
-      height: 68px;
-      border-radius: 50%;
-      background: var(--neon);
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      transition: transform 0.15s, box-shadow 0.15s;
-      box-shadow: 0 0 0 6px rgba(0,245,160,0.12), 0 0 24px rgba(0,245,160,0.3);
-      flex-shrink: 0;
-    }
-    #capture-btn:active { transform: scale(0.93); }
-    #capture-btn svg { color: #0a0a0f; }
-    #capture-btn.loading {
-      background: var(--bg3);
-      box-shadow: none;
-      pointer-events: none;
-    }
+.hud-pills { display: flex; align-items: center; gap: 8px; }
+.pill {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(8,8,16,0.7);
+  border: 1px solid var(--rim);
+  border-radius: 100px;
+  padding: 5px 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; color: var(--sub);
+  letter-spacing: 0.3px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--lime);
+  animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
 
-    .side-btn {
-      width: 46px;
-      height: 46px;
-      border-radius: 50%;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s, border-color 0.2s;
-      flex-shrink: 0;
-    }
-    .side-btn:active { background: rgba(0,245,160,0.1); }
-    .side-btn svg { width: 20px; height: 20px; color: var(--muted); }
+#key-btn-hud {
+  width: 34px; height: 34px;
+  background: rgba(8,8,16,0.7);
+  border: 1px solid var(--rim);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background .2s;
+}
+#key-btn-hud:active { background: var(--glass); }
+#key-btn-hud svg { color: var(--sub); }
 
-    #api-key-display {
-      font-family: 'Space Mono', monospace;
-      font-size: 9px;
-      color: var(--muted);
-      text-align: center;
-      padding: 2px 0 0;
-      letter-spacing: 0.5px;
-    }
-    #api-key-display.set { color: var(--neon); }
+/* ═══════════════════════════════════════
+   BOTTOM CONTROLS (camera bar)
+═══════════════════════════════════════ */
+#controls-bar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  z-index: 10;
+  padding-bottom: max(28px, var(--safe-bottom));
+  padding-top: 20px;
+  padding-left: 24px; padding-right: 24px;
+  background: linear-gradient(to top, rgba(8,8,16,0.92) 0%, transparent 100%);
+  display: flex; align-items: center; justify-content: space-between;
+}
 
-    /* ── CHAT SECTION ── */
-    #chat-section {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      border-top: 1px solid var(--border);
-    }
-    #messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px 16px 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      scroll-behavior: smooth;
-    }
-    #messages::-webkit-scrollbar { width: 3px; }
-    #messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+/* Flip btn */
+.cam-side-btn {
+  width: 50px; height: 50px;
+  border-radius: 50%;
+  background: rgba(15,15,26,0.75);
+  border: 1px solid var(--rim);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .15s, background .15s;
+}
+.cam-side-btn:active { transform: scale(0.92); background: var(--glass); }
+.cam-side-btn svg { color: var(--text); }
 
-    .msg {
-      display: flex;
-      flex-direction: column;
-      max-width: 88%;
-      animation: msg-in 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
-    }
-    @keyframes msg-in {
-      from { opacity: 0; transform: translateY(10px) scale(0.97); }
-      to { opacity: 1; transform: none; }
-    }
-    .msg.user { align-self: flex-end; align-items: flex-end; }
-    .msg.ai { align-self: flex-start; align-items: flex-start; }
+/* Main shutter */
+#shutter {
+  width: 76px; height: 76px;
+  border-radius: 50%;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: transform .12s;
+}
+#shutter:active { transform: scale(0.91); }
+#shutter::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background: var(--lime);
+  box-shadow: 0 0 0 5px rgba(200,255,0,0.18), 0 0 32px rgba(200,255,0,0.25);
+}
+#shutter::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  border: 2px solid rgba(8,8,16,0.3);
+}
+#shutter svg {
+  position: relative; z-index: 1;
+  color: var(--ink);
+}
+#shutter.loading::before { background: var(--ink3); box-shadow: none; }
+#shutter.loading { pointer-events: none; }
 
-    .msg-thumb {
-      width: 100%;
-      max-width: 140px;
-      border-radius: 10px;
-      margin-bottom: 6px;
-      object-fit: cover;
-      border: 1px solid var(--border);
-    }
+/* History btn */
+#history-btn .badge {
+  position: absolute;
+  top: 8px; right: 8px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--rose);
+  border: 1.5px solid var(--ink);
+  display: none;
+}
+#history-btn.has-history .badge { display: block; }
 
-    .bubble {
-      padding: 10px 14px;
-      border-radius: 14px;
-      font-size: 13.5px;
-      line-height: 1.55;
-    }
-    .msg.user .bubble {
-      background: var(--neon);
-      color: #0a0a0f;
-      border-radius: 14px 14px 4px 14px;
-      font-weight: 600;
-    }
-    .msg.ai .bubble {
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: 14px 14px 14px 4px;
-      color: var(--text);
-    }
+/* ═══════════════════════════════════════
+   ANALYZING OVERLAY
+═══════════════════════════════════════ */
+#analyzing-overlay {
+  position: absolute; inset: 0; z-index: 20;
+  background: rgba(8,8,16,0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center; gap: 20px;
+}
+#analyzing-overlay.visible { display: flex; }
+.ring-spinner {
+  width: 60px; height: 60px;
+  position: relative;
+}
+.ring-spinner::before, .ring-spinner::after {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+}
+.ring-spinner::before {
+  border-top-color: var(--lime);
+  animation: spin 0.9s linear infinite;
+}
+.ring-spinner::after {
+  border-bottom-color: rgba(200,255,0,0.25);
+  animation: spin 0.9s linear infinite reverse;
+  inset: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.analyzing-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; color: var(--lime);
+  letter-spacing: 3px; text-transform: uppercase;
+}
 
-    /* Category chips inside AI bubble */
-    .category-tag {
-      display: inline-block;
-      background: rgba(0,245,160,0.12);
-      border: 1px solid rgba(0,245,160,0.25);
-      border-radius: 100px;
-      padding: 2px 8px;
-      font-size: 10px;
-      font-family: 'Space Mono', monospace;
-      color: var(--neon);
-      letter-spacing: 0.5px;
-      margin-bottom: 6px;
-    }
-    .result-name {
-      font-size: 18px;
-      font-weight: 800;
-      color: var(--text);
-      line-height: 1.2;
-      margin: 4px 0;
-    }
-    .result-desc {
-      font-size: 12.5px;
-      color: var(--muted);
-      margin-top: 6px;
-      line-height: 1.5;
-    }
-    .confidence-bar {
-      margin-top: 8px;
-      height: 3px;
-      background: rgba(255,255,255,0.08);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-    .confidence-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--neon), var(--neon2));
-      border-radius: 3px;
-      transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    .confidence-label {
-      font-family: 'Space Mono', monospace;
-      font-size: 9px;
-      color: var(--muted);
-      margin-top: 4px;
-    }
+/* ═══════════════════════════════════════
+   RESULT PANEL (slide-up sheet)
+═══════════════════════════════════════ */
+#result-panel {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  z-index: 30;
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  background: var(--ink2);
+  border-top: 1px solid var(--rim);
+  transform: translateY(110%);
+  transition: transform 0.42s cubic-bezier(0.34, 1.30, 0.64, 1);
+  max-height: 72vh;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+#result-panel.open {
+  transform: translateY(0);
+}
+.panel-handle {
+  flex-shrink: 0;
+  padding: 12px 0 4px;
+  display: flex; justify-content: center;
+}
+.panel-handle::before {
+  content: '';
+  width: 40px; height: 4px;
+  border-radius: 100px;
+  background: rgba(255,255,255,0.15);
+}
+.panel-inner {
+  flex: 1; overflow-y: auto;
+  padding: 4px 20px 20px;
+  overscroll-behavior: contain;
+}
+.panel-inner::-webkit-scrollbar { display: none; }
 
-    .color-swatch {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      margin: 6px 0;
-    }
-    .swatch-circle {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      border: 1.5px solid rgba(255,255,255,0.2);
-      flex-shrink: 0;
-    }
+/* Result card */
+.result-category {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(200,255,0,0.10);
+  border: 1px solid rgba(200,255,0,0.22);
+  border-radius: 100px;
+  padding: 4px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; color: var(--lime);
+  letter-spacing: 1px; text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.result-name {
+  font-size: clamp(26px, 7vw, 34px);
+  font-weight: 900; line-height: 1.1;
+  letter-spacing: -1px; color: var(--text);
+  margin-bottom: 10px;
+}
+.color-row {
+  display: flex; align-items: center; gap: 12px;
+  margin: 10px 0 14px;
+  padding: 12px 14px;
+  background: var(--glass); border-radius: var(--r-sm);
+  border: 1px solid var(--rim);
+}
+.color-chip {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  flex-shrink: 0;
+}
+.color-info { display: flex; flex-direction: column; gap: 3px; }
+.color-hex {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px; font-weight: 500;
+  color: var(--text); letter-spacing: 1px;
+}
+.color-label { font-size: 12px; color: var(--sub); }
 
-    .msg-time {
-      font-family: 'Space Mono', monospace;
-      font-size: 9px;
-      color: var(--muted);
-      margin-top: 4px;
-      padding: 0 4px;
-    }
+.result-desc {
+  font-size: 14px; line-height: 1.65;
+  color: var(--sub);
+  margin-bottom: 16px;
+}
+.confidence-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.confidence-label { font-size: 12px; color: var(--dim); font-weight: 500; }
+.confidence-pct {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px; color: var(--lime);
+}
+.confidence-track {
+  height: 4px; border-radius: 4px;
+  background: rgba(255,255,255,0.07);
+  overflow: hidden; margin-bottom: 16px;
+}
+.confidence-fill {
+  height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, var(--lime2), var(--sky));
+  transition: width 1s cubic-bezier(0.34,1.56,0.64,1);
+}
 
-    /* Welcome state */
-    #welcome {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      gap: 10px;
-      padding: 20px;
-      text-align: center;
-    }
-    #welcome h2 {
-      font-size: 16px;
-      font-weight: 800;
-      color: var(--neon);
-    }
-    #welcome p {
-      font-size: 12px;
-      color: var(--muted);
-      max-width: 240px;
-      line-height: 1.6;
-    }
-    .chip-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      justify-content: center;
-      margin-top: 6px;
-    }
-    .chip {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      padding: 4px 10px;
-      font-size: 11px;
-      color: var(--muted);
-    }
+/* Action row */
+.panel-actions {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin-top: 4px;
+}
+.action-btn {
+  padding: 13px 10px;
+  border-radius: var(--r-sm);
+  background: var(--glass);
+  border: 1px solid var(--rim);
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 13px; font-weight: 700;
+  color: var(--text);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: background .15s, transform .12s;
+}
+.action-btn:active { background: rgba(255,255,255,0.09); transform: scale(0.97); }
+.action-btn.primary {
+  background: var(--lime); color: var(--ink);
+  border-color: transparent;
+}
+.action-btn.primary:active { opacity: 0.85; }
 
-    /* ── TEXT INPUT ── */
-    #input-row {
-      display: flex;
-      gap: 8px;
-      padding: 10px 14px 16px;
-      padding-bottom: max(16px, env(safe-area-inset-bottom));
-      border-top: 1px solid var(--border);
-      background: var(--bg);
-    }
-    #text-input {
-      flex: 1;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 10px 16px;
-      font-size: 13px;
-      color: var(--text);
-      font-family: 'Syne', sans-serif;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    #text-input::placeholder { color: var(--muted); }
-    #text-input:focus { border-color: rgba(0,245,160,0.4); }
-    #send-btn {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      background: var(--neon);
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      transition: transform 0.15s;
-    }
-    #send-btn:active { transform: scale(0.9); }
-    #send-btn svg { color: #0a0a0f; }
+/* Chat follow-up in panel */
+.followup-bar {
+  display: flex; gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+.followup-input {
+  flex: 1;
+  background: var(--ink3);
+  border: 1px solid var(--rim);
+  border-radius: 100px;
+  padding: 11px 18px;
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 14px; color: var(--text);
+  outline: none;
+  transition: border-color .2s;
+}
+.followup-input::placeholder { color: var(--dim); }
+.followup-input:focus { border-color: rgba(200,255,0,0.35); }
+.followup-send {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--lime);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: transform .12s, opacity .12s;
+}
+.followup-send:active { transform: scale(0.9); opacity: 0.8; }
+.followup-send svg { color: var(--ink); }
 
-    /* ── API KEY MODAL ── */
-    #modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(10,10,15,0.92);
-      z-index: 100;
-      display: none;
-      align-items: flex-end;
-      justify-content: center;
-      backdrop-filter: blur(8px);
-    }
-    #modal-overlay.visible { display: flex; }
-    #modal {
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius) var(--radius) 0 0;
-      padding: 28px 24px;
-      padding-bottom: max(28px, env(safe-area-inset-bottom));
-      width: 100%;
-      max-width: 480px;
-      animation: slide-up 0.35s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    @keyframes slide-up {
-      from { transform: translateY(100%); }
-      to { transform: none; }
-    }
-    #modal h3 {
-      font-size: 18px;
-      font-weight: 800;
-      color: var(--neon);
-      margin-bottom: 6px;
-    }
-    #modal p {
-      font-size: 12.5px;
-      color: var(--muted);
-      margin-bottom: 18px;
-      line-height: 1.6;
-    }
-    #modal p a {
-      color: var(--neon2);
-      text-decoration: none;
-    }
-    #api-input {
-      width: 100%;
-      background: var(--bg3);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 12px 16px;
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      color: var(--text);
-      outline: none;
-      margin-bottom: 14px;
-      transition: border-color 0.2s;
-    }
-    #api-input:focus { border-color: rgba(0,245,160,0.4); }
-    #save-key-btn {
-      width: 100%;
-      background: var(--neon);
-      color: #0a0a0f;
-      border: none;
-      border-radius: 12px;
-      padding: 14px;
-      font-family: 'Syne', sans-serif;
-      font-size: 14px;
-      font-weight: 800;
-      cursor: pointer;
-      letter-spacing: 0.5px;
-      transition: opacity 0.2s;
-    }
-    #save-key-btn:active { opacity: 0.8; }
-    #modal-close {
-      background: none;
-      border: none;
-      color: var(--muted);
-      font-size: 22px;
-      cursor: pointer;
-      float: right;
-      margin-top: -4px;
-    }
+/* AI response in panel */
+.ai-followup {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--ink3);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--rim);
+  font-size: 13.5px; line-height: 1.6;
+  color: var(--sub);
+  animation: fadein .3s ease;
+}
+@keyframes fadein { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
 
-    /* ── CAMERA SWITCH ── */
-    #flip-btn { position: relative; }
+/* Panel close btn */
+#panel-close {
+  position: absolute;
+  top: 14px; right: 18px;
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: var(--glass);
+  border: 1px solid var(--rim);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1;
+}
+#panel-close svg { color: var(--sub); }
+
+/* ═══════════════════════════════════════
+   HISTORY DRAWER
+═══════════════════════════════════════ */
+#history-drawer {
+  position: absolute;
+  bottom: 0; left: 0; right: 0; top: 0;
+  z-index: 40;
+  background: var(--ink2);
+  transform: translateX(-100%);
+  transition: transform 0.38s cubic-bezier(0.4,0,0.2,1);
+  display: flex; flex-direction: column;
+}
+#history-drawer.open { transform: translateX(0); }
+.drawer-header {
+  padding: max(18px, var(--safe-top)) 20px 14px;
+  padding-top: max(18px, calc(var(--safe-top) + 10px));
+  border-bottom: 1px solid var(--rim);
+  display: flex; align-items: center; gap: 12px;
+}
+.drawer-header h2 { font-size: 20px; font-weight: 900; flex: 1; }
+#drawer-close {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: var(--glass); border: 1px solid var(--rim);
+  display: flex; align-items: center; justify-content: center;
+}
+#drawer-close svg { color: var(--sub); }
+#history-list {
+  flex: 1; overflow-y: auto; padding: 12px 16px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+#history-list::-webkit-scrollbar { display: none; }
+.history-item {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px;
+  background: var(--glass); border: 1px solid var(--rim);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background .15s;
+}
+.history-item:active { background: rgba(255,255,255,0.08); }
+.history-thumb {
+  width: 52px; height: 52px; border-radius: 10px;
+  object-fit: cover; flex-shrink: 0;
+  border: 1px solid var(--rim);
+}
+.history-info { flex: 1; min-width: 0; }
+.history-name { font-size: 15px; font-weight: 800; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.history-cat { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--lime); letter-spacing: 0.5px; margin-top: 2px; }
+.history-time { font-size: 11px; color: var(--dim); margin-top: 4px; }
+#history-empty {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; color: var(--dim); text-align: center; padding: 40px;
+}
+#history-empty svg { opacity: 0.3; }
+#history-empty p { font-size: 14px; line-height: 1.6; }
+
+/* ═══════════════════════════════════════
+   API KEY MODAL
+═══════════════════════════════════════ */
+#modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(8,8,16,0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: none; align-items: flex-end; justify-content: center;
+}
+#modal-overlay.visible { display: flex; }
+#modal {
+  width: 100%; max-width: 520px;
+  background: var(--ink2);
+  border: 1px solid var(--rim);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  padding: 28px 24px;
+  padding-bottom: max(32px, var(--safe-bottom));
+  animation: sheet-up .38s cubic-bezier(0.34,1.30,0.64,1);
+  position: relative;
+}
+@keyframes sheet-up { from{transform:translateY(100%)} to{transform:none} }
+.modal-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+.modal-top h3 { font-size: 22px; font-weight: 900; line-height: 1.2; }
+.modal-top h3 em { font-style: normal; color: var(--lime); }
+#modal-close-btn {
+  width: 34px; height: 34px;
+  background: var(--glass); border: 1px solid var(--rim);
+  border-radius: 10px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-left: 12px;
+}
+#modal-close-btn svg { color: var(--sub); }
+
+.modal-steps { margin-bottom: 20px; display: flex; flex-direction: column; gap: 9px; }
+.step-row { display: flex; gap: 10px; align-items: flex-start; }
+.step-num {
+  width: 22px; height: 22px;
+  border-radius: 50%; background: var(--lime);
+  color: var(--ink); font-size: 11px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.step-text { font-size: 13.5px; color: var(--sub); line-height: 1.5; }
+.step-text a { color: var(--sky); text-decoration: none; font-weight: 600; }
+
+.api-field {
+  width: 100%;
+  background: var(--ink3);
+  border: 1.5px solid var(--rim);
+  border-radius: var(--r-md);
+  padding: 13px 16px;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px; color: var(--text);
+  outline: none; margin-bottom: 12px;
+  transition: border-color .2s;
+  -webkit-appearance: none;
+}
+.api-field::placeholder { color: var(--dim); }
+.api-field:focus { border-color: rgba(200,255,0,0.4); }
+.api-field.error { border-color: var(--rose); }
+
+.save-btn {
+  width: 100%;
+  background: var(--lime); color: var(--ink);
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: 16px; font-weight: 900;
+  padding: 16px; border-radius: var(--r-md);
+  letter-spacing: 0.2px;
+  transition: opacity .15s, transform .12s;
+}
+.save-btn:active { opacity: 0.85; transform: scale(0.98); }
+
+/* ═══════════════════════════════════════
+   TOAST
+═══════════════════════════════════════ */
+#toast {
+  position: absolute;
+  top: max(80px, calc(var(--safe-top) + 64px));
+  left: 50%; transform: translateX(-50%) translateY(-20px);
+  background: rgba(15,15,26,0.96);
+  border: 1px solid var(--rim);
+  border-radius: 100px;
+  padding: 9px 20px;
+  font-size: 13px; font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  z-index: 50;
+  opacity: 0; pointer-events: none;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: opacity .25s, transform .25s;
+}
+#toast.show {
+  opacity: 1; transform: translateX(-50%) translateY(0);
+}
+
+/* ═══════════════════════════════════════
+   RESPONSIVE — tablet / desktop
+═══════════════════════════════════════ */
+@media (min-width: 600px) {
+  #result-panel, #modal { max-width: 480px; left: 50%; right: auto; transform: translateX(-50%) translateY(110%); border-radius: var(--r-xl); margin-bottom: 24px; }
+  #result-panel.open, #modal { transform: translateX(-50%) translateY(0); }
+  #controls-bar { justify-content: center; gap: 48px; }
+  .bracket.tl { left: 18%; } .bracket.tr { right: 18%; }
+  .bracket.bl { left: 18%; } .bracket.br { right: 18%; }
+}
+@media (min-width: 900px) {
+  #result-panel { max-width: 420px; }
+}
+
+/* ═══════════════════════════════════════
+   MISC
+═══════════════════════════════════════ */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
   </style>
 </head>
 <body>
 <div id="app">
-  <!-- HEADER -->
-  <header>
-    <div class="logo">
-      <svg class="logo-icon" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="34" height="34" rx="8" fill="#0a0a0f"/>
-        <circle cx="17" cy="17" r="13" stroke="#00f5a0" stroke-width="1.5"/>
-        <circle cx="17" cy="17" r="5" fill="#00f5a0"/>
-        <path d="M6 10 L6 6 L10 6" stroke="#00f5a0" stroke-width="1.5" stroke-linecap="round"/>
-        <path d="M28 10 L28 6 L24 6" stroke="#00f5a0" stroke-width="1.5" stroke-linecap="round"/>
-        <path d="M6 24 L6 28 L10 28" stroke="#00f5a0" stroke-width="1.5" stroke-linecap="round"/>
-        <path d="M28 24 L28 28 L24 28" stroke="#00f5a0" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- VIDEO -->
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="canvas"></canvas>
+
+  <!-- CAM PLACEHOLDER -->
+  <div id="cam-placeholder">
+    <div class="placeholder-icon">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
       </svg>
-      <div class="logo-text">Vision<span>Scan</span></div>
     </div>
-    <div class="status-pill">
-      <div class="status-dot"></div>
-      <span id="status-label">READY</span>
-    </div>
-  </header>
-
-  <!-- CAMERA -->
-  <div id="camera-section">
-    <video id="video" autoplay playsinline muted></video>
-    <canvas id="canvas"></canvas>
-
-    <!-- Scan overlay -->
-    <div class="scan-overlay">
-      <div class="scan-frame">
-        <div class="corner tl"></div>
-        <div class="corner tr"></div>
-        <div class="corner bl"></div>
-        <div class="corner br"></div>
-      </div>
-      <div class="scan-line" id="scan-line"></div>
-    </div>
-
-    <!-- Placeholder -->
-    <div id="cam-placeholder">
-      <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-        <path d="M8 22V16a4 4 0 0 1 4-4h6l4-6h20l4 6h6a4 4 0 0 1 4 4v28a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V22z" stroke="#00f5a0" stroke-width="2"/>
-        <circle cx="32" cy="32" r="10" stroke="#00f5a0" stroke-width="2"/>
-        <circle cx="32" cy="32" r="4" fill="#00f5a0" opacity="0.4"/>
-      </svg>
-      <p>Tap the button below to enable your camera</p>
-    </div>
-
-    <!-- Analyzing overlay -->
-    <div id="analyzing-overlay">
-      <div class="spinner"></div>
-      <div class="analyzing-text">ANALYSING...</div>
-    </div>
+    <h3>VisionScan AI</h3>
+    <p>Point your camera at anything — colours, food, drugs, products, plants and more.</p>
+    <button id="start-cam-btn">Enable Camera</button>
   </div>
 
-  <!-- CONTROLS -->
-  <div id="controls">
-    <button class="side-btn" id="flip-btn" title="Flip camera">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M1 4v6h6M23 20v-6h-6"/>
-        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
-      </svg>
-    </button>
-    <button id="capture-btn" title="Scan item">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"/>
-        <path d="M6.343 6.343a8 8 0 1 0 11.314 11.314A8 8 0 0 0 6.343 6.343z"/>
-      </svg>
-    </button>
-    <button class="side-btn" id="key-btn" title="API Key">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
-      </svg>
-    </button>
+  <!-- SCAN OVERLAY -->
+  <div id="scan-overlay">
+    <div class="vignette"></div>
+    <div class="bracket tl"></div>
+    <div class="bracket tr"></div>
+    <div class="bracket bl"></div>
+    <div class="bracket br"></div>
+    <div id="scan-beam"></div>
   </div>
 
-  <!-- CHAT -->
-  <div id="chat-section">
-    <div id="messages">
-      <div id="welcome">
-        <h2>Point. Scan. Know.</h2>
-        <p>Aim your camera at any object and tap the scan button. VisionScan AI identifies it instantly.</p>
-        <div class="chip-row">
-          <div class="chip">🎨 Colours</div>
-          <div class="chip">🍎 Food</div>
-          <div class="chip">💊 Drugs</div>
-          <div class="chip">📦 Items</div>
-          <div class="chip">🌿 Plants</div>
-          <div class="chip">💎 Products</div>
-        </div>
+  <!-- TOP HUD -->
+  <div id="hud-top">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#080810" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
       </div>
+      <div class="brand-name">Vision<em>Scan</em></div>
     </div>
-
-    <div id="input-row">
-      <input type="text" id="text-input" placeholder="Ask about what you scanned…" />
-      <button id="send-btn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+    <div class="hud-pills">
+      <div class="pill"><div class="dot"></div><span id="status-text">READY</span></div>
+      <button id="key-btn-hud" aria-label="API Key settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
         </svg>
       </button>
     </div>
   </div>
-</div>
 
-<!-- API KEY MODAL -->
-<div id="modal-overlay">
-  <div id="modal">
-    <button id="modal-close">×</button>
-    <h3>Free API Key Setup</h3>
-    <p>VisionScan uses <strong style="color:var(--neon)">Google Gemini AI</strong> — completely free, no credit card needed.<br><br>
-    1. Go to <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a><br>
-    2. Click <strong>"Create API Key"</strong><br>
-    3. Paste it below — stored only on your device.</p>
-    <input type="password" id="api-input" placeholder="AIza..." autocomplete="off" />
-    <button id="save-key-btn">Save & Start Scanning</button>
+  <!-- BOTTOM CONTROLS -->
+  <div id="controls-bar">
+    <!-- History -->
+    <button class="cam-side-btn" id="history-btn" aria-label="Scan history" style="position:relative">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 3h5l1.5 9H18l1.5-6H6.5"/><circle cx="9" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
+      </svg>
+      <span class="badge"></span>
+    </button>
+
+    <!-- Shutter -->
+    <button id="shutter" aria-label="Scan item">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+      </svg>
+    </button>
+
+    <!-- Flip -->
+    <button class="cam-side-btn" id="flip-btn" aria-label="Flip camera">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/>
+        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+      </svg>
+    </button>
   </div>
-</div>
+
+  <!-- ANALYZING OVERLAY -->
+  <div id="analyzing-overlay">
+    <div class="ring-spinner"></div>
+    <div class="analyzing-label" id="analyzing-label">SCANNING</div>
+  </div>
+
+  <!-- RESULT PANEL -->
+  <div id="result-panel">
+    <button id="panel-close" aria-label="Close">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+    <div class="panel-handle"></div>
+    <div class="panel-inner" id="panel-content">
+      <!-- Injected dynamically -->
+    </div>
+  </div>
+
+  <!-- HISTORY DRAWER -->
+  <div id="history-drawer">
+    <div class="drawer-header">
+      <h2>Scan History</h2>
+      <button id="drawer-close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast"></div>
+
+  <!-- API KEY MODAL -->
+  <div id="modal-overlay">
+    <div id="modal">
+      <div class="modal-top">
+        <h3>Connect <em>OpenAI</em></h3>
+        <button id="modal-close-btn" aria-label="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-steps">
+        <div class="step-row">
+          <div class="step-num">1</div>
+          <div class="step-text">Go to <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a></div>
+        </div>
+        <div class="step-row">
+          <div class="step-num">2</div>
+          <div class="step-text">Click <strong>"Create new secret key"</strong> — free trial credits available</div>
+        </div>
+        <div class="step-row">
+          <div class="step-num">3</div>
+          <div class="step-text">Paste your key below. It's stored only on your device.</div>
+        </div>
+      </div>
+      <input type="password" class="api-field" id="api-input" placeholder="sk-..." autocomplete="off" autocorrect="off" spellcheck="false"/>
+      <button class="save-btn" id="save-key-btn">Save & Start Scanning</button>
+    </div>
+  </div>
+
+</div><!-- /app -->
 
 <script>
-// ── STATE ──
+'use strict';
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
 let stream = null;
 let facingMode = 'environment';
-let apiKey = localStorage.getItem('vs_api_key') || '';
-let lastImageB64 = null;
-let conversationHistory = [];
-let messageCount = 0;
-const welcomeEl = document.getElementById('welcome');
+let apiKey = localStorage.getItem('vs_openai_key') || '';
+let conversationHistory = []; // [{role, content}]
+let scanHistory = JSON.parse(localStorage.getItem('vs_history') || '[]'); // [{name,category,thumb,time,desc}]
+let lastResult = null;
+let panelOpen = false;
 
-// ── ELEMENTS ──
-const video = document.getElementById('video');
-const canvas = document.getElementById('canvas');
-const captureBtn = document.getElementById('capture-btn');
-const flipBtn = document.getElementById('flip-btn');
-const keyBtn = document.getElementById('key-btn');
-const messagesEl = document.getElementById('messages');
-const textInput = document.getElementById('text-input');
-const sendBtn = document.getElementById('send-btn');
+/* ═══════════════════════════════════════════════
+   ELEMENTS
+═══════════════════════════════════════════════ */
+const video            = document.getElementById('video');
+const canvas           = document.getElementById('canvas');
+const camPlaceholder   = document.getElementById('cam-placeholder');
+const startCamBtn      = document.getElementById('start-cam-btn');
+const scanOverlay      = document.getElementById('scan-overlay');
+const scanBeam         = document.getElementById('scan-beam');
+const shutterBtn       = document.getElementById('shutter');
+const flipBtn          = document.getElementById('flip-btn');
+const historyBtn       = document.getElementById('history-btn');
+const historyDrawer    = document.getElementById('history-drawer');
+const historyList      = document.getElementById('history-list');
+const drawerClose      = document.getElementById('drawer-close');
 const analyzingOverlay = document.getElementById('analyzing-overlay');
-const camPlaceholder = document.getElementById('cam-placeholder');
-const scanLine = document.getElementById('scan-line');
-const statusLabel = document.getElementById('status-label');
-const modalOverlay = document.getElementById('modal-overlay');
-const modalClose = document.getElementById('modal-close');
-const apiInput = document.getElementById('api-input');
-const saveKeyBtn = document.getElementById('save-key-btn');
+const analyzingLabel   = document.getElementById('analyzing-label');
+const resultPanel      = document.getElementById('result-panel');
+const panelContent     = document.getElementById('panel-content');
+const panelClose       = document.getElementById('panel-close');
+const statusText       = document.getElementById('status-text');
+const keyBtnHud        = document.getElementById('key-btn-hud');
+const modalOverlay     = document.getElementById('modal-overlay');
+const modalCloseBtn    = document.getElementById('modal-close-btn');
+const apiInput         = document.getElementById('api-input');
+const saveKeyBtn       = document.getElementById('save-key-btn');
+const toastEl          = document.getElementById('toast');
 
-// ── SERVICE WORKER ──
+/* ═══════════════════════════════════════════════
+   SERVICE WORKER
+═══════════════════════════════════════════════ */
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 
-// ── CAMERA ──
+/* ═══════════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════════ */
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function setStatus(t) { statusText.textContent = t; }
+
+let toastTimer;
+function showToast(msg, duration = 2400) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove('show'), duration);
+}
+
+function haptic(style = 'light') {
+  if (navigator.vibrate) {
+    navigator.vibrate(style === 'heavy' ? [30] : style === 'medium' ? [15] : [8]);
+  }
+}
+
+function timeStr() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+/* ═══════════════════════════════════════════════
+   CAMERA
+═══════════════════════════════════════════════ */
 async function startCamera() {
   try {
     if (stream) stream.getTracks().forEach(t => t.stop());
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+      video: {
+        facingMode,
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        aspectRatio: { ideal: 16/9 }
+      },
       audio: false
     });
     video.srcObject = stream;
     camPlaceholder.classList.add('hidden');
-    scanLine.classList.add('active');
+    scanOverlay.classList.add('visible');
+    scanBeam.classList.add('active');
     setStatus('LIVE');
+    haptic('medium');
   } catch (err) {
     setStatus('NO CAM');
-    camPlaceholder.querySelector('p').textContent = 'Camera access denied. Please allow camera permission.';
+    camPlaceholder.querySelector('p').textContent = 'Camera access denied. Please allow camera permission in your browser settings.';
   }
 }
 
 function flipCamera() {
   facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  haptic();
   startCamera();
 }
 
 function captureFrame() {
-  const w = video.videoWidth || 640;
-  const h = video.videoHeight || 480;
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0, w, h);
-  return canvas.toDataURL('image/jpeg', 0.82).split(',')[1];
+  const w = video.videoWidth || 1280;
+  const h = video.videoHeight || 720;
+  canvas.width = w; canvas.height = h;
+  canvas.getContext('2d').drawImage(video, 0, 0, w, h);
+  // Resize for API efficiency — max 1024px wide
+  const scale = Math.min(1, 1024 / w);
+  const oc = document.createElement('canvas');
+  oc.width = Math.round(w * scale); oc.height = Math.round(h * scale);
+  oc.getContext('2d').drawImage(canvas, 0, 0, oc.width, oc.height);
+  return oc.toDataURL('image/jpeg', 0.85).split(',')[1];
 }
 
-// ── UI HELPERS ──
-function setStatus(text) {
-  statusLabel.textContent = text;
-}
+/* ═══════════════════════════════════════════════
+   OPENAI API
+═══════════════════════════════════════════════ */
+const SYSTEM = `You are VisionScan AI, a precise visual recognition assistant built into a mobile camera app.
 
-function now() {
-  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
+When given an image, identify the primary subject with expert accuracy across all categories:
+• Colors — dominant hue with exact hex code
+• Food & drinks — name, cuisine origin if relevant
+• Medications & drugs — pill/tablet name, dosage form, warnings
+• Household products — brand, product type, use case
+• Plants & flowers — common and scientific name
+• Animals — species, breed if identifiable
+• Electronics — device type, brand, model if visible
+• Clothing & fashion — item type, style, material estimate
+• Gemstones & minerals — type, characteristics
+• Brands & logos — brand name, industry
 
-function hideWelcome() {
-  if (welcomeEl && welcomeEl.parentNode) {
-    welcomeEl.remove();
-  }
-}
+CRITICAL: Respond ONLY in valid JSON — no markdown, no explanation outside JSON.
 
-function addUserMsg(text, imgB64 = null) {
-  hideWelcome();
-  messageCount++;
-  const div = document.createElement('div');
-  div.className = 'msg user';
-  let html = '';
-  if (imgB64) {
-    html += `<img class="msg-thumb" src="data:image/jpeg;base64,${imgB64}" alt="Captured" />`;
-  }
-  html += `<div class="bubble">${escHtml(text)}</div>`;
-  html += `<div class="msg-time">${now()}</div>`;
-  div.innerHTML = html;
-  messagesEl.appendChild(div);
-  scrollBottom();
-}
-
-function addAIMsg(parsed) {
-  messageCount++;
-  const div = document.createElement('div');
-  div.className = 'msg ai';
-
-  let inner = '';
-
-  if (parsed.category) {
-    inner += `<div class="category-tag">${parsed.category.toUpperCase()}</div>`;
-  }
-
-  if (parsed.name) {
-    inner += `<div class="result-name">${escHtml(parsed.name)}</div>`;
-  }
-
-  if (parsed.color_hex) {
-    inner += `<div class="color-swatch">
-      <div class="swatch-circle" style="background:${escHtml(parsed.color_hex)}"></div>
-      <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted)">${escHtml(parsed.color_hex)}</span>
-    </div>`;
-  }
-
-  if (parsed.description) {
-    inner += `<div class="result-desc">${escHtml(parsed.description)}</div>`;
-  }
-
-  if (parsed.confidence !== undefined) {
-    const pct = Math.round(parsed.confidence * 100);
-    inner += `<div class="confidence-bar"><div class="confidence-fill" style="width:${pct}%"></div></div>`;
-    inner += `<div class="confidence-label">Confidence: ${pct}%</div>`;
-  }
-
-  // Fallback plain text
-  if (!parsed.name && !parsed.description && parsed.text) {
-    inner = `<span>${formatText(parsed.text)}</span>`;
-  }
-
-  div.innerHTML = `<div class="bubble">${inner}</div><div class="msg-time">${now()}</div>`;
-  messagesEl.appendChild(div);
-  scrollBottom();
-}
-
-function addPlainAIMsg(text) {
-  messageCount++;
-  const div = document.createElement('div');
-  div.className = 'msg ai';
-  div.innerHTML = `<div class="bubble">${formatText(text)}</div><div class="msg-time">${now()}</div>`;
-  messagesEl.appendChild(div);
-  scrollBottom();
-}
-
-function scrollBottom() {
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-}
-
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function formatText(t) {
-  return escHtml(t).replace(/\n/g, '<br>');
-}
-
-function setAnalyzing(on) {
-  analyzingOverlay.classList.toggle('visible', on);
-  captureBtn.classList.toggle('loading', on);
-  setStatus(on ? 'ANALYSING' : 'LIVE');
-}
-
-// ── GEMINI API ──
-const GEMINI_MODEL = 'gemini-2.0-flash';
-const SYSTEM_PROMPT = `You are VisionScan AI, an expert visual recognition assistant embedded in a camera app.
-
-When given an image, identify what is in it with high accuracy. You can identify:
-- Colours (with exact hex code of the dominant color)
-- Food and drinks
-- Medications and drugs (pills, tablets, packaging)
-- Household items and products
-- Plants and flowers
-- Animals
-- Electronics
-- Clothing and fashion
-- Gemstones and materials
-- Brands and logos
-- And virtually anything else
-
-ALWAYS respond in valid JSON with this exact structure (no markdown fences, no extra text):
+JSON format:
 {
-  "category": "one of: Color | Food | Medication | Plant | Animal | Product | Electronics | Clothing | Brand | Object | Other",
-  "name": "Primary name of the item or color",
-  "color_hex": "#RRGGBB only when category is Color, otherwise null",
-  "description": "2-3 informative sentences about the item — what it is, key characteristics, interesting facts",
-  "confidence": 0.0 to 1.0 as a number
+  "category": "Color|Food|Medication|Plant|Animal|Product|Electronics|Clothing|Brand|Object|Other",
+  "name": "concise primary name",
+  "color_hex": "#RRGGBB if Color category else null",
+  "description": "2-3 clear, informative sentences. Include safety notes for medications.",
+  "confidence": 0.0-1.0,
+  "tags": ["tag1","tag2","tag3"]
 }
 
-For follow-up text questions (no image), respond in JSON:
-{"category": null, "name": null, "color_hex": null, "description": "your helpful answer here", "confidence": null}
+For text-only follow-up questions respond:
+{"category":null,"name":null,"color_hex":null,"description":"your answer","confidence":null,"tags":[]}`;
 
-Return ONLY the raw JSON object. No markdown. No explanation outside JSON.`;
-
-async function callGemini(imageB64, userText) {
-  const parts = [];
-
+async function callOpenAI(imageB64, userText) {
+  const userContent = [];
   if (imageB64) {
-    parts.push({ inline_data: { mime_type: 'image/jpeg', data: imageB64 } });
+    userContent.push({
+      type: 'image_url',
+      image_url: { url: `data:image/jpeg;base64,${imageB64}`, detail: 'high' }
+    });
   }
-  parts.push({ text: userText || 'What is this? Identify it in detail.' });
+  userContent.push({ type: 'text', text: userText || 'Identify what is in this image in detail.' });
 
-  // Build conversation contents
-  const contents = [];
+  conversationHistory.push({ role: 'user', content: userContent });
+  if (conversationHistory.length > 10) conversationHistory = conversationHistory.slice(-10);
 
-  // Add history (text-only turns for context)
-  for (const h of conversationHistory) {
-    if (h.role === 'user') {
-      contents.push({ role: 'user', parts: [{ text: h.text }] });
-    } else {
-      contents.push({ role: 'model', parts: [{ text: h.text }] });
-    }
-  }
-  // Add current turn
-  contents.push({ role: 'user', parts });
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
-
-  const res = await fetch(url, {
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
     body: JSON.stringify({
-      system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
-      contents,
-      generationConfig: {
-        maxOutputTokens: 600,
-        temperature: 0.3,
-        responseMimeType: 'application/json'
-      }
+      model: 'gpt-4o',
+      max_tokens: 500,
+      temperature: 0.2,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: SYSTEM },
+        ...conversationHistory
+      ]
     })
   });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    const msg = err.error?.message || `HTTP ${res.status}`;
-    throw new Error(msg);
+    throw new Error(err.error?.message || `Error ${res.status}`);
   }
 
   const data = await res.json();
-  const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+  const text = data.choices?.[0]?.message?.content || '{}';
+  conversationHistory.push({ role: 'assistant', content: text });
 
-  // Store simplified history
-  conversationHistory.push({ role: 'user', text: userText || 'Identify this image.' });
-  conversationHistory.push({ role: 'model', text: reply });
-  if (conversationHistory.length > 16) conversationHistory = conversationHistory.slice(-16);
+  try { return JSON.parse(text); }
+  catch { return { description: text }; }
+}
+
+/* ═══════════════════════════════════════════════
+   RESULT PANEL
+═══════════════════════════════════════════════ */
+const CAT_ICONS = {
+  Color:'🎨', Food:'🍎', Medication:'💊', Plant:'🌿',
+  Animal:'🐾', Product:'📦', Electronics:'⚡', Clothing:'👕',
+  Brand:'🏷️', Object:'🔍', Other:'✨'
+};
+
+function openResultPanel(parsed, imgB64) {
+  lastResult = { parsed, imgB64 };
+  conversationHistory = []; // fresh conversation anchored to this scan
+
+  const cat = parsed.category || 'Other';
+  const icon = CAT_ICONS[cat] || '✨';
+  const conf = parsed.confidence != null ? Math.round(parsed.confidence * 100) : null;
+  const tags = (parsed.tags || []).slice(0, 4);
+
+  let html = `<div class="result-category">${icon} ${esc(cat)}</div>`;
+
+  if (parsed.name) {
+    html += `<div class="result-name">${esc(parsed.name)}</div>`;
+  }
+
+  if (parsed.color_hex) {
+    html += `<div class="color-row">
+      <div class="color-chip" style="background:${esc(parsed.color_hex)}"></div>
+      <div class="color-info">
+        <div class="color-hex">${esc(parsed.color_hex.toUpperCase())}</div>
+        <div class="color-label">${esc(parsed.name || 'Detected colour')}</div>
+      </div>
+    </div>`;
+  }
+
+  if (parsed.description) {
+    html += `<div class="result-desc">${esc(parsed.description)}</div>`;
+  }
+
+  if (tags.length) {
+    html += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">`;
+    tags.forEach(t => {
+      html += `<span style="background:var(--glass);border:1px solid var(--rim);border-radius:100px;padding:3px 10px;font-size:11px;color:var(--sub)">${esc(t)}</span>`;
+    });
+    html += `</div>`;
+  }
+
+  if (conf !== null) {
+    html += `<div class="confidence-row">
+      <span class="confidence-label">Confidence</span>
+      <span class="confidence-pct">${conf}%</span>
+    </div>
+    <div class="confidence-track">
+      <div class="confidence-fill" id="conf-fill" style="width:0%"></div>
+    </div>`;
+  }
+
+  html += `<div class="panel-actions">
+    <button class="action-btn" id="rescan-btn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
+      Rescan
+    </button>
+    <button class="action-btn primary" id="copy-btn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      Copy
+    </button>
+  </div>`;
+
+  html += `<div class="followup-bar">
+    <input class="followup-input" id="followup-input" type="text" placeholder="Ask anything about this…" autocomplete="off"/>
+    <button class="followup-send" id="followup-send">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>`;
+
+  panelContent.innerHTML = html;
+  resultPanel.classList.add('open');
+  panelOpen = true;
+
+  // Animate confidence bar
+  if (conf !== null) {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const fill = document.getElementById('conf-fill');
+        if (fill) fill.style.width = conf + '%';
+      }, 60);
+    });
+  }
+
+  // Wire buttons
+  document.getElementById('rescan-btn')?.addEventListener('click', () => {
+    closeResultPanel(); haptic();
+  });
+  document.getElementById('copy-btn')?.addEventListener('click', () => {
+    const txt = [parsed.name, parsed.category, parsed.description].filter(Boolean).join(' — ');
+    navigator.clipboard?.writeText(txt).then(() => showToast('Copied!')).catch(() => showToast('Copy failed'));
+    haptic();
+  });
+  document.getElementById('followup-send')?.addEventListener('click', doFollowUp);
+  document.getElementById('followup-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); doFollowUp(); }
+  });
+
+  // Save to history
+  saveToHistory({ name: parsed.name || 'Unknown', category: cat, thumb: imgB64 ? `data:image/jpeg;base64,${imgB64}` : null, desc: parsed.description || '', time: timeStr() });
+}
+
+function closeResultPanel() {
+  resultPanel.classList.remove('open');
+  panelOpen = false;
+}
+
+/* ═══════════════════════════════════════════════
+   FOLLOW-UP CHAT
+═══════════════════════════════════════════════ */
+async function doFollowUp() {
+  const input = document.getElementById('followup-input');
+  const text = input?.value.trim();
+  if (!text || !apiKey) return;
+  input.value = '';
+  input.disabled = true;
+
+  // Show typing indicator
+  const typing = document.createElement('div');
+  typing.className = 'ai-followup';
+  typing.innerHTML = '<span style="opacity:.5;font-size:18px">···</span>';
+  panelContent.appendChild(typing);
+  panelContent.parentElement.scrollTop = panelContent.parentElement.scrollHeight;
 
   try {
-    const clean = reply.replace(/```json|```/g, '').trim();
-    return JSON.parse(clean);
-  } catch {
-    return { text: reply };
+    const result = await callOpenAI(null, text);
+    typing.textContent = result.description || JSON.stringify(result);
+  } catch (err) {
+    typing.textContent = '⚠️ ' + (err.message || 'Error');
+  } finally {
+    input.disabled = false;
+    input.focus();
+    panelContent.parentElement.scrollTop = panelContent.parentElement.scrollHeight;
   }
 }
 
-// ── SCAN ──
+/* ═══════════════════════════════════════════════
+   SCAN
+═══════════════════════════════════════════════ */
 async function doScan() {
   if (!apiKey) { openModal(); return; }
   if (!stream) { await startCamera(); return; }
 
+  haptic('heavy');
   const imgB64 = captureFrame();
-  lastImageB64 = imgB64;
 
-  addUserMsg('Scan this', imgB64);
-  setAnalyzing(true);
+  setAnalyzing(true, 'SCANNING');
 
   try {
-    const result = await callGemini(imgB64, null);
-    addAIMsg(result);
-  } catch (err) {
-    addPlainAIMsg('⚠️ ' + (err.message || 'Something went wrong. Check your API key.'));
-  } finally {
+    const result = await callOpenAI(imgB64, null);
     setAnalyzing(false);
+    openResultPanel(result, imgB64);
+    haptic('medium');
+  } catch (err) {
+    setAnalyzing(false);
+    showToast('⚠️ ' + (err.message || 'Something went wrong'), 3500);
   }
 }
 
-// ── TEXT SEND ──
-async function doSend() {
-  const text = textInput.value.trim();
-  if (!text) return;
-  if (!apiKey) { openModal(); return; }
-
-  textInput.value = '';
-  addUserMsg(text);
-  setAnalyzing(true);
-  setStatus('THINKING');
-
-  try {
-    // Include last image if recent conversation
-    const result = await callGemini(null, text);
-    addAIMsg(result);
-  } catch (err) {
-    addPlainAIMsg('⚠️ ' + (err.message || 'Error. Check your API key.'));
-  } finally {
-    setAnalyzing(false);
-    setStatus(stream ? 'LIVE' : 'READY');
-  }
+function setAnalyzing(on, label = 'SCANNING') {
+  analyzingOverlay.classList.toggle('visible', on);
+  shutterBtn.classList.toggle('loading', on);
+  analyzingLabel.textContent = label;
+  setStatus(on ? label : (stream ? 'LIVE' : 'READY'));
 }
 
-// ── MODAL ──
+/* ═══════════════════════════════════════════════
+   HISTORY
+═══════════════════════════════════════════════ */
+function saveToHistory(item) {
+  scanHistory.unshift(item);
+  if (scanHistory.length > 30) scanHistory = scanHistory.slice(0, 30);
+  localStorage.setItem('vs_history', JSON.stringify(scanHistory));
+  historyBtn.classList.add('has-history');
+}
+
+function renderHistory() {
+  historyList.innerHTML = '';
+  if (!scanHistory.length) {
+    historyList.innerHTML = `<div id="history-empty">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <p>No scans yet.<br>Point at something and tap the shutter.</p>
+    </div>`;
+    return;
+  }
+  scanHistory.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    div.innerHTML = `
+      ${item.thumb ? `<img class="history-thumb" src="${item.thumb}" alt="${esc(item.name)}"/>` : `<div class="history-thumb" style="background:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:24px">${CAT_ICONS[item.category]||'✨'}</div>`}
+      <div class="history-info">
+        <div class="history-name">${esc(item.name)}</div>
+        <div class="history-cat">${CAT_ICONS[item.category]||''} ${esc(item.category)}</div>
+        <div class="history-time">${esc(item.time)}</div>
+      </div>`;
+    historyList.appendChild(div);
+  });
+  historyBtn.classList.add('has-history');
+}
+
+/* ═══════════════════════════════════════════════
+   MODAL
+═══════════════════════════════════════════════ */
 function openModal() {
   apiInput.value = apiKey;
+  apiInput.classList.remove('error');
   modalOverlay.classList.add('visible');
-  setTimeout(() => apiInput.focus(), 400);
+  setTimeout(() => apiInput.focus(), 420);
 }
-function closeModal() {
-  modalOverlay.classList.remove('visible');
-}
+function closeModal() { modalOverlay.classList.remove('visible'); }
 
 saveKeyBtn.addEventListener('click', () => {
   const key = apiInput.value.trim();
-  if (!key.startsWith('AIza') || key.length < 20) {
-    apiInput.style.borderColor = '#f500a0';
-    apiInput.placeholder = 'Must start with AIza...';
-    setTimeout(() => { apiInput.style.borderColor = ''; apiInput.placeholder = 'AIza...'; }, 2500);
+  if (!key.startsWith('sk-') || key.length < 20) {
+    apiInput.classList.add('error');
+    showToast('Key must start with sk-…');
+    setTimeout(() => apiInput.classList.remove('error'), 2000);
     return;
   }
   apiKey = key;
-  localStorage.setItem('vs_api_key', key);
+  localStorage.setItem('vs_openai_key', key);
   closeModal();
+  showToast('✓ Key saved');
   if (!stream) startCamera();
 });
 
-modalClose.addEventListener('click', closeModal);
+/* ═══════════════════════════════════════════════
+   TOUCH / SWIPE TO CLOSE PANEL
+═══════════════════════════════════════════════ */
+let panelStartY = 0;
+resultPanel.addEventListener('touchstart', e => { panelStartY = e.touches[0].clientY; }, { passive: true });
+resultPanel.addEventListener('touchend', e => {
+  const dy = e.changedTouches[0].clientY - panelStartY;
+  if (dy > 60) closeResultPanel();
+}, { passive: true });
+
+/* ═══════════════════════════════════════════════
+   EVENTS
+═══════════════════════════════════════════════ */
+startCamBtn.addEventListener('click', () => {
+  if (!apiKey) { openModal(); return; }
+  startCamera();
+});
+shutterBtn.addEventListener('click', doScan);
+flipBtn.addEventListener('click', flipCamera);
+panelClose.addEventListener('click', closeResultPanel);
+keyBtnHud.addEventListener('click', openModal);
+modalCloseBtn.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
 
-// ── EVENTS ──
-captureBtn.addEventListener('click', doScan);
-flipBtn.addEventListener('click', flipCamera);
-keyBtn.addEventListener('click', openModal);
-sendBtn.addEventListener('click', doSend);
-textInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); } });
+historyBtn.addEventListener('click', () => {
+  renderHistory();
+  historyDrawer.classList.add('open');
+  haptic();
+});
+drawerClose.addEventListener('click', () => historyDrawer.classList.remove('open'));
 
-// ── INIT ──
+// Close panel on backdrop tap (outside panel)
+document.addEventListener('click', e => {
+  if (panelOpen && !resultPanel.contains(e.target) && e.target !== shutterBtn) {
+    closeResultPanel();
+  }
+});
+
+/* ═══════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════ */
+if (scanHistory.length) historyBtn.classList.add('has-history');
+
 (async () => {
   if (!apiKey) {
-    setTimeout(openModal, 600);
+    setTimeout(openModal, 700);
   } else {
     await startCamera();
   }
