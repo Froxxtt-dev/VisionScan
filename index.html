@@ -498,8 +498,8 @@ input{font-family:inherit;color:inherit}
     <button id="shutter" aria-label="Scan">
       <div class="spin-ring"></div>
       <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"/><path d="M20.188 10.934A8 8 0 1 1 10.8 3.84"/>
-        <path d="M21 3L15 9M21 3h-6M21 3v6"/>
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
       </svg>
     </button>
 
@@ -982,9 +982,18 @@ function renderHistory(){
     return;
   }
   history.forEach(item=>{
-    const d=document.createElement('div'); d.className='h-item';
-    d.innerHTML=`${item.thumb?`<img class="h-thumb" src="${esc(item.thumb)}" alt=""/>`:`<div class="h-thumb-ph">${CAT_ICON[item.category]||'✨'}</div>`}
-    <div style="flex:1;min-width:0"><div class="h-name">${esc(item.name)}</div><div class="h-cat">${CAT_ICON[item.category]||''} ${esc(item.category)}</div><div class="h-time">${esc(item.time)}</div></div>`;
+    const d = document.createElement('div');
+    d.className = 'h-item';
+    const thumbHtml = item.thumb ? `<img class="h-thumb" src="${esc(item.thumb)}" alt=""/>` : `<div class="h-thumb-ph">${CAT_ICON[item.category]||'✨'}</div>`;
+    d.innerHTML = `${thumbHtml}<div style="flex:1;min-width:0"><div class="h-name">${esc(item.name)}</div><div class="h-cat">${CAT_ICON[item.category]||''} ${esc(item.category)}</div><div class="h-time">${esc(item.time)}</div></div>`;
+    d.style.cursor = 'pointer';
+    d.addEventListener('click', ()=>{
+      const base64 = item.thumb && item.thumb.startsWith('data:') ? item.thumb.split(',')[1] : (item.thumb || null);
+      const parsed = { category: item.category, name: item.name, description: item.desc || '', confidence: null, tags: [] };
+      drawer.classList.remove('open');
+      showSheet(parsed, base64);
+      haptic(10);
+    });
     histList.appendChild(d);
   });
 }
