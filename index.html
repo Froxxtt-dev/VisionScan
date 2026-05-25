@@ -12,9 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Unbounded:wght@400;700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <style>
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   TOKENS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 :root {
   --bg:     #07070f;
   --bg2:    #0e0e1c;
@@ -40,20 +38,14 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--txt);
 button{cursor:pointer;border:none;background:none;font-family:inherit;color:inherit}
 input{font-family:inherit;color:inherit}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   BASE LAYOUT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 #app{position:fixed;inset:0;overflow:hidden}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   CAMERA
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 #video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
 #canvas,#detect-canvas{display:none}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   PLACEHOLDER
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 #placeholder{
   position:absolute;inset:0;z-index:5;
   background:var(--bg2);
@@ -71,9 +63,7 @@ input{font-family:inherit;color:inherit}
 }
 #enable-btn:active{transform:scale(0.95);opacity:.85}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   SCAN OVERLAY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 #scan-overlay{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity .4s}
 #scan-overlay.on{opacity:1}
 .vignette{position:absolute;inset:0;background:radial-gradient(ellipse 72% 65% at 50% 48%,transparent 38%,rgba(7,7,15,.6) 100%)}
@@ -91,9 +81,7 @@ input{font-family:inherit;color:inherit}
 #beam.on{opacity:1}
 @keyframes beam{0%{top:18%}50%{top:60%}100%{top:18%}}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   TOP HUD
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 #hud{
   position:absolute;top:0;left:0;right:0;z-index:10;
   padding-top:max(14px,var(--safe-t));
@@ -128,9 +116,7 @@ input{font-family:inherit;color:inherit}
 .hud-btn:active{background:var(--glass)}
 .hud-btn svg{color:var(--sub)}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   BOTTOM CONTROL BAR
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 #bar{
   position:absolute;bottom:0;left:0;right:0;z-index:10;
   padding-bottom:max(28px,var(--safe-b));padding-top:20px;
@@ -194,9 +180,7 @@ input{font-family:inherit;color:inherit}
 }
 .mode-pill.active{background:var(--lime);color:var(--bg);border-color:transparent;font-weight:700}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ANALYSING OVERLAY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 #loading{
   position:absolute;inset:0;z-index:20;
   background:rgba(7,7,15,.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
@@ -212,9 +196,7 @@ input{font-family:inherit;color:inherit}
 .loader-ring::after{border-bottom-color:rgba(212,255,0,.2);animation:rot .85s linear infinite reverse;inset:9px}
 #loading-txt{font-family:'DM Mono',monospace;font-size:11px;color:var(--lime);letter-spacing:3px;text-transform:uppercase}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   RESULT SHEET
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 #sheet{
   position:absolute;bottom:0;left:0;right:0;z-index:30;
   border-radius:28px 28px 0 0;
@@ -300,9 +282,7 @@ input{font-family:inherit;color:inherit}
 .ask-send:active{transform:scale(.9);opacity:.8}
 .ask-send svg{color:var(--bg)}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   HISTORY DRAWER
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 #drawer{
   position:absolute;inset:0;z-index:40;
   background:var(--bg2);
@@ -339,9 +319,7 @@ input{font-family:inherit;color:inherit}
 .hist-empty svg{opacity:.25}
 .hist-empty p{font-size:14px;line-height:1.6}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   SETTINGS MODAL
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 #modal-wrap{
   position:fixed;inset:0;z-index:100;
   background:rgba(7,7,15,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
@@ -403,9 +381,7 @@ input{font-family:inherit;color:inherit}
 }
 .no-key-info strong{color:var(--lime)}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   TOAST
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 #toast{
   position:absolute;
   top:max(76px,calc(var(--safe-t)+62px));
@@ -418,9 +394,7 @@ input{font-family:inherit;color:inherit}
 }
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   RESPONSIVE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 @media(min-width:520px){
   #sheet,#modal{max-width:440px;left:50%;right:auto;
     border-radius:24px;margin-bottom:20px;
@@ -547,9 +521,9 @@ input{font-family:inherit;color:inherit}
       </div>
 
       <div class="provider-tabs">
-        <button class="p-tab active" data-tab="nokey">🔓 No Key</button>
-        <button class="p-tab" data-tab="groq">⚡ Groq (Free)</button>
-        <button class="p-tab" data-tab="gemini">🔮 Gemini (Free)</button>
+        <button class="p-tab active" data-tab="nokey"> No Key</button>
+        <button class="p-tab" data-tab="groq"> Groq </button>
+        <button class="p-tab" data-tab="gemini"> Gemini </button>
       </div>
 
       <!-- NO KEY PANE -->
@@ -600,9 +574,7 @@ input{font-family:inherit;color:inherit}
 
 <script>
 'use strict';
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   STATE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 let stream = null, facingMode = 'environment';
 let groqKey  = localStorage.getItem('vs_groq') || '';
 let gemKey   = localStorage.getItem('vs_gem')  || '';
@@ -613,9 +585,7 @@ let history  = JSON.parse(localStorage.getItem('vs_hist') || '[]');
 let convHistory = [];
 let sheetOpen = false;
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   ELEMENTS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 const $  = id => document.getElementById(id);
 const video       = $('video');
 const canvas      = $('canvas');
@@ -640,14 +610,10 @@ const modalWrap   = $('modal-wrap');
 const modalClose  = $('modal-close-btn');
 const toast       = $('toast');
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   SERVICE WORKER
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   UTILS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const haptic = (ms=10) => navigator.vibrate?.(ms);
 const setStatus = t => statusTxt.textContent = t;
@@ -658,9 +624,7 @@ function showToast(msg,ms=2600){
 }
 function timeStr(){ return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   CAMERA
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 async function startCamera(){
   try{
     if(stream) stream.getTracks().forEach(t=>t.stop());
@@ -688,9 +652,7 @@ function captureFrame(maxW=1024){
   return canvas.toDataURL('image/jpeg',.85).split(',')[1];
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   TENSORFLOW.JS OFFLINE MODE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 async function warmupCoco(){
   if(cocoModel||cocoLoading) return;
   cocoLoading=true; setStatus('LOADING AI…');
@@ -735,8 +697,6 @@ const COCO_INFO = {
   snowboard:"A wide board used to slide down snow-covered slopes.",
   "sports ball":"A ball used in sports — could be football, basketball, etc.",
   kite:"A light frame covered with cloth, flown in the wind.",
-  "baseball bat":"A smooth wooden or metal club used in baseball.",
-  "baseball glove":"A leather glove worn to catch baseballs.",
   skateboard:"A short board with wheels used for skating.",
   surfboard:"A long board used for riding ocean waves.",
   "tennis racket":"A strung racket used in tennis.",
@@ -768,7 +728,7 @@ const COCO_INFO = {
   mouse:"A small handheld device for controlling a computer cursor.",
   remote:"A handheld device for controlling electronics wirelessly.",
   keyboard:"An input device with keys for typing.",
-  "cell phone":"A portable telephone device.",
+  cell phone:"A portable telephone device.",
   microwave:"A kitchen appliance for heating food with microwaves.",
   oven:"A thermally insulated chamber for cooking food.",
   toaster:"A kitchen appliance for toasting bread.",
@@ -778,9 +738,11 @@ const COCO_INFO = {
   clock:"A device for measuring and displaying time.",
   vase:"A container for displaying flowers or plants.",
   scissors:"A cutting tool with two pivoted blades.",
-  "teddy bear":"A stuffed toy bear.",
-  "hair drier":"An electrical device for drying hair with hot air.",
-  toothbrush:"A brush for cleaning teeth."
+  teddy bear:"A stuffed toy bear.",
+  hair drier:"An electrical device for drying hair with hot air.",
+  toothbrush:"A brush for cleaning teeth.",
+  book: "A stationery into which we write",
+  fridge: "An electronic gadget that keeps item cold",
 };
 
 async function scanOffline(){
@@ -803,9 +765,6 @@ async function scanOffline(){
   }, imgB64);
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   GROQ API  (Llama 4 Scout vision)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 const VISION_SYSTEM = `You are VisionScan AI, a precise visual recognition assistant in a mobile camera app.
 Identify the primary subject of the image. Categories: Color, Food, Medication, Plant, Animal, Product, Electronics, Clothing, Brand, Object, Other.
 Respond ONLY in valid JSON — no markdown, no explanation outside JSON:
@@ -842,9 +801,7 @@ async function callGroq(imgB64, text){
   try{return JSON.parse(txt);}catch{return{description:txt};}
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   GEMINI API  (fallback)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 async function callGemini(imgB64, text){
   const parts=[];
   if(imgB64) parts.push({inline_data:{mime_type:'image/jpeg',data:imgB64}});
@@ -872,9 +829,7 @@ async function callGemini(imgB64, text){
   try{return JSON.parse(txt.replace(/```json|```/g,'').trim());}catch{return{description:txt};}
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   SCAN DISPATCHER
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 async function doScan(){
   if(!stream){ await startCamera(); return; }
   haptic(20);
@@ -903,9 +858,7 @@ async function doScan(){
   }
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   RESULT SHEET
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 const CAT_ICON = {Color:'🎨',Food:'🍎',Medication:'💊',Plant:'🌿',Animal:'🐾',Product:'📦',Electronics:'⚡',Clothing:'👕',Brand:'🏷️',Object:'🔍',Other:'✨'};
 
 function showSheet(parsed,imgB64){
@@ -967,9 +920,7 @@ async function doAsk(){
   sheetBody.scrollTop=sheetBody.scrollHeight;
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   HISTORY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 function saveHistory(item){
   history.unshift(item); if(history.length>40) history=history.slice(0,40);
   localStorage.setItem('vs_hist',JSON.stringify(history));
@@ -989,9 +940,7 @@ function renderHistory(){
   });
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   LOADING
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 function setLoading(on,txt='SCANNING'){
   loading.classList.toggle('on',on);
   shutter.classList.toggle('busy',on);
@@ -999,9 +948,7 @@ function setLoading(on,txt='SCANNING'){
   setStatus(on?txt:(stream?'LIVE':'READY'));
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   MODE TOGGLE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 document.querySelectorAll('.mode-pill').forEach(btn=>{
   btn.addEventListener('click',()=>{
     document.querySelectorAll('.mode-pill').forEach(b=>b.classList.remove('active'));
@@ -1015,9 +962,7 @@ document.querySelectorAll('.mode-pill').forEach(btn=>{
 // Set initial active
 document.querySelectorAll('.mode-pill').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   MODAL (settings)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 function openModal(tab='nokey'){
   $('groq-inp').value=groqKey;
   $('gem-inp').value=gemKey;
@@ -1057,16 +1002,12 @@ $('save-gem').addEventListener('click',()=>{
   if(!stream) startCamera();
 });
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   SWIPE TO CLOSE SHEET
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 let sy=0;
 sheet.addEventListener('touchstart',e=>{ sy=e.touches[0].clientY; },{passive:true});
 sheet.addEventListener('touchend',e=>{ if(e.changedTouches[0].clientY-sy>70) closeSheet(); },{passive:true});
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   EVENTS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 enableBtn.addEventListener('click',()=>startCamera());
 shutter.addEventListener('click',doScan);
 flipBtn.addEventListener('click',flipCamera);
@@ -1080,9 +1021,7 @@ document.addEventListener('click',e=>{ if(sheetOpen&&!sheet.contains(e.target)&&
 
 if(history.length) histBtn.classList.add('has-history');
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   INIT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 (async()=>{
   // Auto start camera on load
   await startCamera();
